@@ -114,7 +114,7 @@ try
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
         # Download VMware Tools installer
-        Invoke-WebRequest "https://packages.vmware.com/tools/releases/latest/windows/x64/VMware-tools.exe" -OutFile "c:\vmware-tools.exe"
+        Invoke-WebRequest "https://packages.vmware.com/tools/releases/latest/windows/x64/VMware-tools-12.5.1-24649672-x64.exe" -OutFile "c:\vmware-tools.exe"
 
         # Run the installer silently
         $vmwareLog = "$ENV:Temp\vmware-tools.log"
@@ -140,7 +140,7 @@ try
         Remove-Item -Path c:\cloudbase.msi
         Remove-Item -Path c:\virtio.msi
         Remove-Item -Path c:\virtio.exe
-        Remove-Item -Path "c:\vmware-tools.exe"
+        Remove-Item -Path c:\vmware-tools.exe
 
         # Write success, this is used to check that this process made it this far
         New-Item -Path c:\success.tch -Type file -Force
