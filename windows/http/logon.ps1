@@ -118,7 +118,7 @@ try
 
         # Run the installer silently
         $vmwareLog = "$ENV:Temp\vmware-tools.log"
-        $p = Start-Process -Wait -PassThru -FilePath "c:\vmware-tools.exe" -ArgumentList '/S /v "/qn REBOOT=R ADDLOCAL=ALL\" /l*v ' + $vmwareLog
+        $p = Start-Process -Wait -PassThru -FilePath "c:\vmware-tools.exe" -ArgumentList $('/S /v "/qn REBOOT=R ADDLOCAL=ALL\" /l*v ' + $vmwareLog)
         if ($p.ExitCode -ne 0) {
             throw "Installing VMware Tools failed. Log: $vmwareLog"
         }
