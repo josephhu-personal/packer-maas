@@ -109,13 +109,27 @@ try
         $p = Start-Process -Wait -PassThru -FilePath msiexec -ArgumentList "/a c:\virtio.msi /qn /norestart /l*v $virtioLog LOGGINGSERIALPORTNAME=$serialPortName"
         $p = Start-Process -Wait -PassThru -FilePath c:\virtio.exe -Argument "/silent"
 
+        # Install VMware Tools
+        $Host.UI.RawUI.WindowTitle = "Installing VMware Tools..."
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+        # Download VMware Tools installer
+        Invoke-WebRequest "https://packages.vmware.com/tools/releases/latest/windows/x64/VMware-tools.exe" -OutFile "c:\vmware-tools.exe"
+
+        # Run the installer silently
+        $vmwareLog = "$ENV:Temp\vmware-tools.log"
+        $p = Start-Process -Wait -PassThru -FilePath "c:\vmware-tools.exe" -ArgumentList "/S /v\"/qn REBOOT=R ADDLOCAL=ALL\" /l*v $vmwareLog"
+        if ($p.ExitCode -ne 0) {
+            throw "Installing VMware Tools failed. Log: $vmwareLog"
+        }
+
         # We're done, remove LogonScript, disable AutoLogon
         Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name Unattend*
         Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name AutoLogonCount
 
         $Host.UI.RawUI.WindowTitle = "Running SetSetupComplete..."
         & "$ENV:ProgramFiles\Cloudbase Solutions\Cloudbase-Init\bin\SetSetupComplete.cmd"
-
+        
         if ($RunPowershell) {
             $Host.UI.RawUI.WindowTitle = "Paused, waiting for user to finish work in other terminal"
             Write-Host "Spawning another powershell for the user to complete any work..."
@@ -126,6 +140,7 @@ try
         Remove-Item -Path c:\cloudbase.msi
         Remove-Item -Path c:\virtio.msi
         Remove-Item -Path c:\virtio.exe
+        Remove-Item -Path "c:\vmware-tools.exe"
 
         # Write success, this is used to check that this process made it this far
         New-Item -Path c:\success.tch -Type file -Force
