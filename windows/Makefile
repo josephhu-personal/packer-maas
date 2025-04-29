@@ -8,7 +8,7 @@ export PACKER_LOG
 
 ISO ?=
 VHDX ?=
-VERSION ?= 2022
+VERSION ?= 11
 HEADLESS ?= false
 FORMAT ?= ISO
 TIMEOUT ?= 1h
@@ -19,7 +19,7 @@ ifeq ($(strip $(VERSION)),10)
 	EDIT ?= PRO
 else ifeq ($(strip $(VERSION)),11)
 	TYPE = Windows
-	EDIT ?= PRO
+	EDIT ?= Enterprise
 	USE_TPM ?= yes
 else ifeq ($(strip $(VERSION)),2025)
 	TYPE = Windows Server
