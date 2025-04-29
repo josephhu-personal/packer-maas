@@ -109,19 +109,19 @@ try
         $p = Start-Process -Wait -PassThru -FilePath msiexec -ArgumentList "/a c:\virtio.msi /qn /norestart /l*v $virtioLog LOGGINGSERIALPORTNAME=$serialPortName"
         $p = Start-Process -Wait -PassThru -FilePath c:\virtio.exe -Argument "/silent"
 
+        # Install Chocolatey
+        $Host.UI.RawUI.WindowTitle = "Installing Chocolatey..."
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+        if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+            Write-Host "Chocolatey not found, installing..."
+            Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        }
+
         # Install VMware Tools
         $Host.UI.RawUI.WindowTitle = "Installing VMware Tools..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-        # Download VMware Tools installer
-        Invoke-WebRequest "https://packages.vmware.com/tools/releases/latest/windows/x64/VMware-tools-12.5.1-24649672-x64.exe" -OutFile "c:\vmware-tools.exe"
-
-        # Run the installer silently
-        $vmwareLog = "$ENV:Temp\vmware-tools.log"
-        $p = Start-Process -Wait -PassThru -FilePath "c:\vmware-tools.exe" -ArgumentList $('/S /v "/qn REBOOT=R ADDLOCAL=ALL\" /l*v ' + $vmwareLog)
-        if ($p.ExitCode -ne 0) {
-            throw "Installing VMware Tools failed. Log: $vmwareLog"
-        }
+        choco install vmware-tools --params '"/ALL"' -y
 
         # We're done, remove LogonScript, disable AutoLogon
         Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name Unattend*
