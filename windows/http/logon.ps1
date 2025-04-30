@@ -118,10 +118,51 @@ try
             Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
         }
 
-        # Install VMware Tools
+        # Install Google Chrome
+        $Host.UI.RawUI.WindowTitle = "Installing Google Chrome..."
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        choco install googlechrome --params '"/ALL"' -y
+
+        # Install Chocolatey
         $Host.UI.RawUI.WindowTitle = "Installing VMware Tools..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        choco install vmware-tools --params '"/ALL"' -y
+
+        # Download VMware Tools installer
+        Invoke-WebRequest "https://packages.vmware.com/tools/releases/latest/windows/x64/VMware-tools-12.5.1-24649672-x64.exe" -OutFile "c:\vmware-tools.exe"
+        
+        # Extract the MSI files from the EXE
+        $extractPath = "C:\vmware-tools-extracted"
+        New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
+        Start-Process -Wait -FilePath "c:\vmware-tools.exe" -ArgumentList "/extract $extractPath /quiet"
+
+        # Locate the 64-bit MSI
+        $msiPath = Get-ChildItem -Path $extractPath -Filter "*.msi" | Where-Object { $_.Name -match "64" } | Select-Object -ExpandProperty FullName
+        if (-not $msiPath) {
+            throw "Failed to locate the 64-bit MSI in the extracted files."
+        }
+        # Modify the MSI to remove the VM_CheckRequirements action
+        $installer = New-Object -ComObject WindowsInstaller.Installer
+        $database = $installer.OpenDatabase($msiPath, 1)
+
+        # Remove the VM_CheckRequirements action from the InstallUISequence table
+        $sqlQuery = "DELETE FROM InstallUISequence WHERE Action = 'VM_CheckRequirements'"
+        $view = $database.OpenView($sqlQuery)
+        $view.Execute()
+        $view.Close()
+
+        # Commit the changes
+        $database.Commit()
+        $database = $null
+        $installer = $null
+
+        Write-Host "Successfully modified the MSI."
+
+        # Run the modified MSI installer silently
+        $vmwareLog = "$ENV:Temp\vmware-tools.log"
+        $p = Start-Process -Wait -PassThru -FilePath "msiexec.exe" -ArgumentList $('/i "' + $msiPath + '" /qn REBOOT=R ADDLOCAL=ALL /l*v "' + $vmwareLog + '"')
+        if ($p.ExitCode -ne 0) {
+            throw "Installing VMware Tools failed. Log: $vmwareLog"
+        }
 
         # We're done, remove LogonScript, disable AutoLogon
         Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name Unattend*
@@ -141,6 +182,7 @@ try
         Remove-Item -Path c:\virtio.msi
         Remove-Item -Path c:\virtio.exe
         Remove-Item -Path c:\vmware-tools.exe
+        Remove-Item -Path $extractPath -Recurse -Force
 
         # Write success, this is used to check that this process made it this far
         New-Item -Path c:\success.tch -Type file -Force
