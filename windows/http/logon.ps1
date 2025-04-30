@@ -145,6 +145,8 @@ try
         # Write success, this is used to check that this process made it this far
         New-Item -Path c:\success.tch -Type file -Force
 
+        Get-AppxPackage -AllUsers | Where-Object {$_.PackageFullName -like "*MicrosoftWindows.Client.WebExperience*"} | Remove-AppPackage -ErrorAction SilentlyContinue
+
         $Host.UI.RawUI.WindowTitle = "Running Sysprep..."
         if ($DoGeneralize) {
             $unattendedXmlPath = "$ENV:ProgramFiles\Cloudbase Solutions\Cloudbase-Init\conf\Unattend.xml"
