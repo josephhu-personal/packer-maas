@@ -121,7 +121,7 @@ try
         # Install Google Chrome
         $Host.UI.RawUI.WindowTitle = "Installing Google Chrome..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        choco install googlechrome --params '"/ALL"' -y
+        choco install googlechrome -y --ignore-checksums
 
         # Install Chocolatey
         $Host.UI.RawUI.WindowTitle = "Installing VMware Tools..."
