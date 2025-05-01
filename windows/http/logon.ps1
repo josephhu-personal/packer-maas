@@ -55,38 +55,6 @@ try
     # seconds for the network to be active.
     start-sleep -s 30
 
-        # Inject extra drivers if the infs directory is present on the attached iso
-        if (Test-Path -Path "E:\infs")
-        {
-            # To install extra drivers the Windows Driver Kit is needed for dpinst.exe.
-            # Sadly you cannot just download dpinst.exe. The whole driver kit must be
-            # installed.
-            # Download the WDK installer.
-            $Host.UI.RawUI.WindowTitle = "Downloading Windows Driver Kit..."
-            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-            Invoke-WebRequest "https://download.microsoft.com/download/8/6/9/86925F0F-D57A-4BA4-8278-861B6876D78E/wdk/wdksetup.exe" -Outfile "c:\wdksetup.exe"
-
-            # Run the installer.
-            $Host.UI.RawUI.WindowTitle = "Installing Windows Driver Kit..."
-            $p = Start-Process -PassThru -Wait -FilePath "c:\wdksetup.exe" -ArgumentList "/features OptionId.WindowsDriverKitComplete /q /ceip off /norestart"
-            if ($p.ExitCode -ne 0)
-            {
-                throw "Installing wdksetup.exe failed."
-            }
-
-            # Run dpinst.exe with the path to the drivers.
-            $Host.UI.RawUI.WindowTitle = "Injecting Windows drivers..."
-            $dpinst = "$ENV:ProgramFiles (x86)\Windows Kits\8.1\redist\DIFx\dpinst\EngMui\x64\dpinst.exe"
-            Start-Process -Wait -FilePath "$dpinst" -ArgumentList "/S /C /F /SA /Path E:\infs"
-
-            # Uninstall the WDK
-            $Host.UI.RawUI.WindowTitle = "Uninstalling Windows Driver Kit..."
-            Start-Process -Wait -FilePath "c:\wdksetup.exe" -ArgumentList "/features + /q /uninstall /norestart"
-
-            # Clean-up
-            Remove-Item -Path c:\wdksetup.exe
-        }
-
         $Host.UI.RawUI.WindowTitle = "Installing Cloudbase-Init..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Invoke-WebRequest "https://cloudbase.it/downloads/CloudbaseInitSetup_Stable_x64.msi" -Outfile "c:\cloudbase.msi"
@@ -123,40 +91,15 @@ try
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         choco install googlechrome -y --ignore-checksums
 
-        # Install Chocolatey
+        # Install VMware Tools
         $Host.UI.RawUI.WindowTitle = "Installing VMware Tools..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-        # Download VMware Tools installer
-        Invoke-WebRequest "https://packages.vmware.com/tools/releases/latest/windows/x64/VMware-tools-12.5.1-24649672-x64.exe" -OutFile "c:\vmware-tools.exe"
-        
-        # Extract the MSI files from the EXE
-        $extractPath = "C:\vmware-tools-extracted"
-        New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
-        Start-Process -Wait -FilePath "c:\vmware-tools.exe" -ArgumentList "/extract $extractPath /quiet"
-
         # Locate the 64-bit MSI
-        $msiPath = Get-ChildItem -Path $extractPath -Filter "*.msi" | Where-Object { $_.Name -match "64" } | Select-Object -ExpandProperty FullName
+        $msiPath = "A:\VMware Tools64.msi"
         if (-not $msiPath) {
             throw "Failed to locate the 64-bit MSI in the extracted files."
         }
-        # Modify the MSI to remove the VM_CheckRequirements action
-        $installer = New-Object -ComObject WindowsInstaller.Installer
-        $database = $installer.OpenDatabase($msiPath, 1)
-
-        # Remove the VM_CheckRequirements action from the InstallUISequence table
-        $sqlQuery = "DELETE FROM InstallUISequence WHERE Action = 'VM_CheckRequirements'"
-        $view = $database.OpenView($sqlQuery)
-        $view.Execute()
-        $view.Close()
-
-        # Commit the changes
-        $database.Commit()
-        $database = $null
-        $installer = $null
-
-        Write-Host "Successfully modified the MSI."
-
         # Run the modified MSI installer silently
         $vmwareLog = "$ENV:Temp\vmware-tools.log"
         $p = Start-Process -Wait -PassThru -FilePath "msiexec.exe" -ArgumentList $('/i "' + $msiPath + '" /qn REBOOT=R ADDLOCAL=ALL /l*v "' + $vmwareLog + '"')
@@ -181,8 +124,6 @@ try
         Remove-Item -Path c:\cloudbase.msi
         Remove-Item -Path c:\virtio.msi
         Remove-Item -Path c:\virtio.exe
-        Remove-Item -Path c:\vmware-tools.exe
-        Remove-Item -Path $extractPath -Recurse -Force
 
         # Write success, this is used to check that this process made it this far
         New-Item -Path c:\success.tch -Type file -Force
