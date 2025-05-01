@@ -78,7 +78,7 @@ source "qemu" "windows_builder" {
   disk_interface   = "sata"
   disk_image       = "${var.is_vhdx}"
   disk_size        = "${var.disk_size}"
-  floppy_files     = ["./http/Autounattend.xml", "./http/logon.ps1", "./http/rh.cer"]
+  floppy_files     = ["./http/Autounattend.xml", "./http/logon.ps1", "./http/rh.cer", "./http/vmwaretools64.msi"]
   floppy_label     = "flop"
   format           = "raw"
   headless         = "${var.headless}"
@@ -119,4 +119,17 @@ build {
   post-processor "compress" {
     output = "${var.filename}"
   }
+
+  post-processor "vsphere"{
+      vm_name = "packer-windows-${formatdate("YYYY-MM-DD-HH-mm", timestamp())}"
+      host                = "nypdrthorizonvcsa01.sis.nyp.org"
+      username            = "cyark_citrix06@sis.nyp.org"
+      password            = "VMw@re1!"
+      datacenter          = "dc-01"
+      cluster             = "cluster-01"
+      datastore           = "datastore-01"
+      vm_network          = "VM Network"
+      keep_input_artifact = true
+  }
 }
+

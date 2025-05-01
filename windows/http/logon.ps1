@@ -96,7 +96,7 @@ try
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
         # Locate the 64-bit MSI
-        $msiPath = "A:\VMware Tools64.msi"
+        $msiPath = "A:\vmwaretools64.msi"
         if (-not $msiPath) {
             throw "Failed to locate the 64-bit MSI in the extracted files."
         }
