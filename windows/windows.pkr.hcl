@@ -78,7 +78,7 @@ source "qemu" "windows_builder" {
   disk_interface   = "sata"
   disk_image       = "${var.is_vhdx}"
   disk_size        = "${var.disk_size}"
-  floppy_files     = ["./http/Autounattend.xml", "./http/logon.ps1", "./http/rh.cer", "./http/vmwaretools64.msi"]
+  floppy_files     = ["./http/Autounattend.xml", "./http/logon.ps1", "./http/rh.cer"]
   floppy_label     = "flop"
   format           = "raw"
   headless         = "${var.headless}"

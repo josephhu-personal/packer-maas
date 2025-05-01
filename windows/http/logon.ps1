@@ -95,11 +95,11 @@ try
         $Host.UI.RawUI.WindowTitle = "Installing VMware Tools..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-        # Locate the 64-bit MSI
-        $msiPath = "A:\vmwaretools64.msi"
-        if (-not $msiPath) {
-            throw "Failed to locate the 64-bit MSI in the extracted files."
+        # Verify the file exists
+        if (-not (Test-Path $msiPath)) {
+            throw "Failed to locate the VMware Tools MSI file on the CIFS share."
         }
+        
         # Run the modified MSI installer silently
         $vmwareLog = "$ENV:Temp\vmware-tools.log"
         $p = Start-Process -Wait -PassThru -FilePath "msiexec.exe" -ArgumentList $('/i "' + $msiPath + '" /qn REBOOT=R ADDLOCAL=ALL /l*v "' + $vmwareLog + '"')
